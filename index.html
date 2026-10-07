@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍓</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet" />
+    <title>Ichigo Jam</title>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span class="logo">🍓</span>
+        <div>
+          <div class="name">Ichigo Jam</div>
+          <div class="tagline">一期一会 · one time, one meeting</div>
+        </div>
+      </div>
+      <div id="roundBadge" class="round-badge"></div>
+      <div class="score">
+        <span class="score-label">ジャム<br /><small>JAMS</small></span>
+        <strong id="score">0</strong>
+      </div>
+    </header>
+
+    <main>
+      <section class="stage">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="overlay"></canvas>
+        <div id="status" class="status">🍓 準備中… <small>Getting ready…</small></div>
+        <div id="celebrate" class="celebrate"></div>
+        <div class="prompt">
+          <div id="promptJa" class="ja">カメラの前に来てね！</div>
+          <div id="promptEn" class="en">Step in front of the camera!</div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="jar-wrap">
+          <div class="jar">
+            <div class="lid"></div>
+            <div class="glass">
+              <div id="jam" class="jam"></div>
+              <div class="jar-label">🍓</div>
+            </div>
+          </div>
+          <div class="jar-caption">
+            <div id="holdJa" class="ja">そろったらジャムがたまるよ</div>
+            <div id="holdEn" class="en">Match to fill the jam jar</div>
+          </div>
+        </div>
+        <div id="people" class="people"></div>
+      </aside>
+    </main>
+
+    <dialog id="settings">
+      <form method="dialog">
+        <h2>⚙️ Settings</h2>
+        <label>Game
+          <select id="modeSetting">
+            <option value="auto">Auto (cycle all games; mixed and mirror need 2+ people)</option>
+            <option value="target">Same target emotion only</option>
+            <option value="mix">Different emotion per person only</option>
+            <option value="mirror">Match each other only</option>
+          </select>
+        </label>
+        <label>Hold time: <span id="holdSecondsVal"></span>s
+          <input id="holdSeconds" type="range" min="1" max="10" step="0.5" />
+        </label>
+        <label>Sensitivity threshold: <span id="thresholdVal"></span>%
+          <input id="threshold" type="range" min="30" max="95" step="5" />
+        </label>
+        <label>Skip a round after: <span id="roundTimeoutVal"></span>s
+          <input id="roundTimeout" type="range" min="10" max="90" step="5" />
+        </label>
+        <label class="check"><input id="ignoreNeutral" type="checkbox" /> Two neutral faces don't count as a match</label>
+        <div class="buttons">
+          <button type="button" id="resetScore">Reset score</button>
+          <button>Close</button>
+        </div>
+        <p class="hint">Keys: <b>S</b> settings · <b>F</b> fullscreen · <b>N</b> next round</p>
+      </form>
+    </dialog>
+    <button id="gear" class="gear" title="Settings (S)">⚙️</button>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
