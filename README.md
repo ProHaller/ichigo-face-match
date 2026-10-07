@@ -30,3 +30,8 @@ npm run dev
 Open http://localhost:5173, allow camera access, press **F** for full screen.
 
 Testing without a camera: `http://localhost:5173/?testImage=<image url>` uses a still image instead.
+
+## Demo
+
+Live at https://prohaller.github.io/ichigo-face-match/ — deployed to GitHub Pages by `.github/workflows/deploy.yml` on every push to `main`.
+One-time setup: repo **Settings → Pages → Source: GitHub Actions**.

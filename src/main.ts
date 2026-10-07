@@ -413,8 +413,8 @@ async function start() {
     await tf.setBackend('webgl')
     await tf.ready()
     await Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-      faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+      faceapi.nets.tinyFaceDetector.loadFromUri(`${import.meta.env.BASE_URL}models`),
+      faceapi.nets.faceExpressionNet.loadFromUri(`${import.meta.env.BASE_URL}models`),
     ])
     statusEl.innerHTML = '📷 カメラを起動中… <small>Starting camera…</small>'
     const testImage = new URLSearchParams(location.search).get('testImage')
