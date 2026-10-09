@@ -89,16 +89,63 @@ main {
 .prompt .en { font-size: clamp(16px, 1.7vw, 24px); color: var(--muted); margin-top: 2px; }
 body.matching .prompt { border-color: var(--leaf); transform: translateX(-50%) scale(1.04); }
 
-.celebrate {
-  position: absolute; inset: 0; display: grid; place-content: center; text-align: center;
-  background: rgba(230, 57, 80, 0.55); color: #fff; opacity: 0; pointer-events: none;
-  transition: opacity 0.3s;
+.celebrate { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.celebrate.flash { animation: flash 0.7s ease-out; }
+
+/* ---------- success photo ---------- */
+.photo {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+  padding: 24px; background: rgba(74, 21, 32, 0.55);
+  opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
 }
-.celebrate.show { opacity: 1; }
-.celebrate.show .ja { animation: pop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1); }
-.celebrate .ja { font-size: clamp(56px, 8vw, 120px); font-weight: 800; text-shadow: 0 6px 0 var(--berry-deep); }
-.celebrate .en { font-size: clamp(24px, 3vw, 44px); font-weight: 800; }
-.celebrate.show ~ .prompt { opacity: 0; }
+.photo.show { opacity: 1; visibility: visible; }
+.polaroid {
+  --rot: -2deg;
+  display: flex; flex-direction: column; gap: 12px;
+  width: min(880px, 100%); max-height: 100%;
+  background: #fff; border-radius: 22px; padding: 18px 22px 16px;
+  border: 6px solid var(--berry);
+  box-shadow: 0 12px 0 var(--pink), 0 30px 60px rgba(0, 0, 0, 0.35);
+  transform: rotate(var(--rot));
+}
+.photo.show .polaroid { animation: develop 0.7s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.photo-head { display: flex; align-items: center; justify-content: center; gap: 18px; text-align: center; }
+.photo-head .ja { font-size: clamp(34px, 4.4vw, 64px); font-weight: 800; color: var(--berry); line-height: 1.05; text-shadow: 0 4px 0 var(--blush); }
+.photo-head .en { font-size: clamp(18px, 2vw, 28px); font-weight: 800; color: var(--muted); }
+.photo-logo { font-size: clamp(32px, 4vw, 56px); animation: bob 3s ease-in-out infinite; }
+.photo-frame {
+  position: relative; min-height: 0; border-radius: 16px; align-self: center; max-width: 100%;
+  padding: 10px; background:
+    radial-gradient(circle at 8px 8px, var(--seed) 2px, transparent 3px) 0 0 / 22px 22px,
+    linear-gradient(135deg, #ff5470, var(--berry-deep));
+}
+.photo-frame canvas {
+  display: block; width: auto; height: auto; max-width: 100%; max-height: calc(100vh - 380px);
+  border-radius: 10px; background: var(--ink);
+}
+.corner { position: absolute; font-size: 38px; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.2)); }
+.corner.tl { top: -18px; left: -16px; transform: rotate(-25deg); }
+.corner.tr { top: -18px; right: -16px; transform: rotate(25deg); }
+.corner.bl { bottom: -18px; left: -16px; transform: rotate(-155deg); }
+.corner.br { bottom: -18px; right: -16px; transform: rotate(155deg); }
+.photo-caption { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.photo-caption .kind { font-size: 18px; font-weight: 800; color: var(--muted); letter-spacing: 1px; }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.chip {
+  --c: var(--berry);
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 6px 18px 6px 8px; border-radius: 999px;
+  background: var(--blush); border: 3px solid var(--c);
+}
+.chip b { background: var(--c); color: #fff; border-radius: 999px; padding: 2px 10px; font-size: 18px; }
+.chip i { font-style: normal; font-size: 40px; line-height: 1; }
+.chip > span { display: flex; flex-direction: column; line-height: 1.1; text-align: left; }
+.chip .cj { font-size: clamp(22px, 2.4vw, 32px); font-weight: 800; color: var(--berry-deep); }
+.chip .ce { font-size: clamp(14px, 1.4vw, 18px); font-weight: 500; color: var(--muted); }
+.photo-foot { display: flex; justify-content: space-between; font-size: 15px; color: var(--muted); font-weight: 800; }
+.photo-timer { height: 6px; border-radius: 99px; background: var(--blush); overflow: hidden; }
+.photo-timer div { height: 100%; width: 100%; background: var(--berry); transform-origin: left; }
+.photo.show .photo-timer div { animation: drain linear forwards; }
 
 /* ---------- side: jam jar + players ---------- */
 .side { display: flex; flex-direction: column; gap: 22px; min-height: 0; }
@@ -176,7 +223,9 @@ dialog button:last-child { background: var(--berry); color: #fff; border-color: 
 @keyframes bob { 50% { transform: translateY(-4px) rotate(-6deg); } }
 @keyframes wave { to { background-position-x: 40px; } }
 @keyframes wiggle { 50% { transform: translate(-50%, -50%) rotate(8deg) scale(1.08); } }
-@keyframes pop { from { transform: scale(0.3); opacity: 0; } }
+@keyframes flash { from { opacity: 0.9; } to { opacity: 0; } }
+@keyframes develop { from { transform: rotate(8deg) scale(0.4); opacity: 0; } }
+@keyframes drain { to { transform: scaleX(0); } }
 
 @media (max-width: 1000px) {
   :root { --header-h: 80px; }

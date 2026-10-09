@@ -55,6 +55,30 @@
       </aside>
     </main>
 
+    <div id="photo" class="photo" aria-live="polite">
+      <div class="polaroid">
+        <div class="photo-head">
+          <span class="photo-logo">🍓</span>
+          <div>
+            <div id="photoJa" class="ja"></div>
+            <div id="photoEn" class="en"></div>
+          </div>
+          <span class="photo-logo">🍓</span>
+        </div>
+        <div class="photo-frame">
+          <canvas id="snapshot"></canvas>
+          <span class="corner tl">🍓</span><span class="corner tr">🍓</span>
+          <span class="corner bl">🍓</span><span class="corner br">🍓</span>
+        </div>
+        <div id="photoCaption" class="photo-caption"></div>
+        <div class="photo-foot">
+          <span>Ichigo Jam · 一期一会</span>
+          <span id="photoStamp"></span>
+        </div>
+        <div class="photo-timer"><div id="photoTimer"></div></div>
+      </div>
+    </div>
+
     <dialog id="settings">
       <form method="dialog">
         <h2>⚙️ Settings</h2>

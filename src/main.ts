@@ -27,7 +27,7 @@ const INFO: Record<Emotion, { emoji: string; ja: string; en: string; promptJa: s
 // one colour per player, all from the strawberry palette
 const PLAYER_COLORS = ['#e63950', '#3a9d5d', '#f2994a', '#9b51e0', '#2d9cdb', '#d4a017']
 const SMOOTHING = 0.35 // weight of the newest frame in the moving average
-const CELEBRATE_MS = 3500
+const CELEBRATE_MS = 6500 // how long the success photo stays up before the next round
 
 // ---------- settings (persisted, edited in the hidden S dialog) ----------
 const DEFAULTS = { mode: 'auto' as ModeSetting, holdSeconds: 3, threshold: 0.6, roundTimeout: 30, ignoreNeutral: true }
@@ -65,6 +65,13 @@ const peopleEl = $('people')
 const scoreEl = $('score')
 const roundBadge = $('roundBadge')
 const dialog = $<HTMLDialogElement>('settings')
+const photoEl = $('photo')
+const snapshot = $<HTMLCanvasElement>('snapshot')
+const photoCaption = $('photoCaption')
+const photoJa = $('photoJa')
+const photoEn = $('photoEn')
+const photoStamp = $('photoStamp')
+const photoTimer = $('photoTimer')
 
 // ---------- state ----------
 let round: Round = 'target'
@@ -121,6 +128,7 @@ document.addEventListener('keydown', (e) => {
   if (key === 's') dialog.open ? dialog.close() : dialog.showModal()
   if (key === 'f') toggleFullscreen()
   if (key === 'n') nextRound()
+  if (key === 'w' && import.meta.env.DEV) win() // dev only: force a win to check the success photo
 })
 document.addEventListener('dblclick', toggleFullscreen)
 
@@ -264,7 +272,6 @@ function update(dt: number) {
     held = Math.max(0, held - dt * 2) // decay rather than reset so a flicker isn't fatal
   }
 
-  celebrateEl.classList.toggle('show', now < celebrateUntil)
   promptJa.textContent = ja
   promptEn.textContent = en
   document.body.classList.toggle('matching', success)
@@ -287,6 +294,7 @@ function update(dt: number) {
 }
 
 function win() {
+  if (performance.now() < celebrateUntil) return
   setScore(score + 1)
   held = 0
   celebrateUntil = performance.now() + CELEBRATE_MS
@@ -297,7 +305,7 @@ function win() {
     ['最高！', 'Jam-tastic!'],
   ]
   const [ja, en] = lines[Math.floor(Math.random() * lines.length)]
-  celebrateEl.innerHTML = `<div class="ja">${ja}</div><div class="en">${en}</div>`
+  showPhoto(ja, en)
 
   const strawberry = confetti.shapeFromText({ text: '🍓', scalar: 3 })
   const colors = ['#e63950', '#ff8fa3', '#ffffff', '#3a9d5d', '#ffd36b']
@@ -305,7 +313,49 @@ function win() {
   confetti({ particleCount: 40, spread: 120, origin: { y: 0.5 }, shapes: [strawberry], scalar: 3 })
   setTimeout(() => confetti({ particleCount: 80, angle: 60, spread: 60, origin: { x: 0 }, colors }), 250)
   setTimeout(() => confetti({ particleCount: 80, angle: 120, spread: 60, origin: { x: 1 }, colors }), 450)
-  setTimeout(nextRound, CELEBRATE_MS)
+  setTimeout(() => {
+    photoEl.classList.remove('show')
+    nextRound()
+  }, CELEBRATE_MS)
+}
+
+// Success photo: the raw camera frame (no boxes or labels), mirrored like the live view,
+// framed with what everyone was going for
+function showPhoto(ja: string, en: string) {
+  snapshot.width = video.videoWidth
+  snapshot.height = video.videoHeight
+  const g = snapshot.getContext('2d')!
+  g.save()
+  g.translate(snapshot.width, 0)
+  g.scale(-1, 1)
+  g.drawImage(video, 0, 0, snapshot.width, snapshot.height)
+  g.restore()
+
+  const chip = (e: Emotion, player?: number) =>
+    `<span class="chip"${player === undefined ? '' : ` style="--c:${PLAYER_COLORS[player % PLAYER_COLORS.length]}"`}>` +
+    `${player === undefined ? '' : `<b>P${player + 1}</b>`}<i>${INFO[e].emoji}</i>` +
+    `<span><span class="cj">${INFO[e].ja}</span><span class="ce">${INFO[e].en}</span></span></span>`
+  if (round === 'mix') {
+    const players = faces.slice(0, assignments.length)
+    photoCaption.innerHTML =
+      `<div class="kind">🎭 バラバラ · Mixed feelings</div>` +
+      `<div class="chips">${players.map((_, i) => chip(assignments[i], i)).join('')}</div>`
+  } else if (round === 'mirror') {
+    photoCaption.innerHTML = `<div class="kind">🪞 ミラー · Mirror match</div><div class="chips">${chip(dominant(faces[0].scores))}</div>`
+  } else {
+    photoCaption.innerHTML = `<div class="kind">🎯 お題 · Target</div><div class="chips">${chip(target)}</div>`
+  }
+  photoJa.textContent = ja
+  photoEn.textContent = en
+  const time = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+  photoStamp.textContent = `🫙 #${score} · ${time}`
+  photoTimer.style.animationDuration = `${CELEBRATE_MS}ms`
+  // restart the CSS animations for this win
+  photoEl.classList.remove('show')
+  celebrateEl.classList.remove('flash')
+  void photoEl.offsetWidth
+  photoEl.classList.add('show')
+  celebrateEl.classList.add('flash') // camera flash on the live view
 }
 
 // ---------- rendering ----------
@@ -449,11 +499,9 @@ async function imageStream(url: string): Promise<MediaStream> {
   c.width = img.naturalWidth
   c.height = img.naturalHeight
   const g = c.getContext('2d')!
-  const paint = () => {
-    g.drawImage(img, 0, 0)
-    requestAnimationFrame(paint)
-  }
-  paint()
+  // a timer rather than requestAnimationFrame so the stream keeps flowing in a background tab
+  g.drawImage(img, 0, 0)
+  setInterval(() => g.drawImage(img, 0, 0), 1000 / 30)
   return c.captureStream(30)
 }
 
