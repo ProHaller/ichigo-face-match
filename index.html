@@ -100,6 +100,10 @@
           <input id="roundTimeout" type="range" min="10" max="90" step="5" />
         </label>
         <label class="check"><input id="ignoreNeutral" type="checkbox" /> Two neutral faces don't count as a match</label>
+        <section class="saved-cards">
+          <button type="button" id="downloadCards" disabled>写真をダウンロード · Download pictures</button>
+          <p id="cardStatus" aria-live="polite"></p>
+        </section>
         <div class="buttons">
           <button type="button" id="resetScore">Reset score</button>
           <button>Close</button>

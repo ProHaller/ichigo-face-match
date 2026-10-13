@@ -1,3 +1,5 @@
+import { zipSync } from 'fflate'
+import html2canvas from 'html2canvas'
 import './style.css'
 import * as faceapi from '@vladmandic/face-api'
 import confetti from 'canvas-confetti'
@@ -89,6 +91,55 @@ interface Face {
   scores: Scores
 }
 let faces: Face[] = []
+
+// Session-only gallery. Downloaded cards stay available for another export.
+const victoryCards: { filename: string; blob: Blob; downloaded: boolean }[] = []
+let pendingCards = 0
+let exportingCards = false
+const downloadCards = $<HTMLButtonElement>('downloadCards')
+const cardStatus = $('cardStatus')
+function warnBeforeLeaving(event: BeforeUnloadEvent) {
+  event.preventDefault()
+  event.returnValue = ''
+}
+function updateCardStatus() {
+  const unsaved = victoryCards.filter((card) => !card.downloaded).length
+  const count = unsaved + pendingCards
+  cardStatus.textContent = count
+    ? `⚠ 未保存 ${count}枚 · ${count} unsaved${count === 1 ? ' picture' : ' pictures'}\n閉じる前にダウンロード · Download before closing`
+    : '未保存 0枚 · 0 unsaved pictures'
+  cardStatus.classList.toggle('unsaved', count > 0)
+  downloadCards.disabled = exportingCards || !victoryCards.length
+  // Install the warning only while there is something at risk.
+  if (unsaved || pendingCards) window.addEventListener('beforeunload', warnBeforeLeaving)
+  else window.removeEventListener('beforeunload', warnBeforeLeaving)
+}
+downloadCards.addEventListener('click', async () => {
+  const cards = [...victoryCards]
+  exportingCards = true
+  updateCardStatus()
+  try {
+    const files: Record<string, Uint8Array> = {}
+    for (const card of cards) files[card.filename] = new Uint8Array(await card.blob.arrayBuffer())
+    const archive = zipSync(files, { level: 0 })
+    const url = URL.createObjectURL(new Blob([new Uint8Array(archive)], { type: 'application/zip' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `ichigo-jam_cards_${new Date().toISOString().replace(/[:.]/g, '-')}.zip`
+    document.body.append(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    for (const card of cards) card.downloaded = true
+  } catch (error) {
+    console.error('Could not download victory cards', error)
+    alert('ダウンロードに失敗しました。もう一度お試しください。 / Download failed. Please try again.')
+  } finally {
+    exportingCards = false
+    updateCardStatus()
+  }
+})
+updateCardStatus()
 
 // ---------- settings dialog ----------
 function bindRange(id: keyof Settings, toUi = (v: number) => v, fromUi = (v: number) => v) {
@@ -356,6 +407,47 @@ function showPhoto(ja: string, en: string) {
   void photoEl.offsetWidth
   photoEl.classList.add('show')
   celebrateEl.classList.add('flash') // camera flash on the live view
+  void saveSuccessPhoto()
+}
+
+// Export the complete victory card, with the clean photo and bilingual target labels.
+async function saveSuccessPhoto() {
+  if (!snapshot.width || !snapshot.height) return
+  const emotions = round === 'mix'
+    ? assignments.slice(0, faces.length).map((emotion, i) => `p${i + 1}-${emotion}`).join('_')
+    : round === 'mirror'
+      ? (faces[0] ? dominant(faces[0].scores) : 'match')
+      : target
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const filename = `ichigo-jam_${timestamp}_${score}_${round}_${emotions}.png`
+  pendingCards++
+  updateCardStatus()
+  try {
+    const card = photoEl.querySelector<HTMLElement>('.polaroid')!
+    const image = await html2canvas(card, {
+      backgroundColor: null,
+      scale: 2,
+      logging: false,
+      onclone: (doc) => {
+        // Freeze the card for export, upright and with a full celebration timer.
+        const clonedCard = doc.querySelector<HTMLElement>('.polaroid')!
+        const style = doc.createElement('style')
+        style.textContent = '.polaroid, .polaroid * { animation: none !important; transition: none !important; } .polaroid { transform: none !important; } #photoTimer { transform: none !important; }'
+        doc.head.append(style)
+        clonedCard.style.transform = 'none'
+      },
+    })
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      image.toBlob((result) => result ? resolve(result) : reject(new Error('Could not encode the victory card')), 'image/png')
+    })
+    victoryCards.push({ filename, blob, downloaded: false })
+  } catch (error) {
+    console.error('Could not save the victory card', error)
+    photoStamp.textContent += ' · 保存失敗 / Save failed'
+  } finally {
+    pendingCards--
+    updateCardStatus()
+  }
 }
 
 // ---------- rendering ----------
